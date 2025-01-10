@@ -1,8 +1,36 @@
+# Ajoutez météo et la température juillet, aout
+# Si la clé API Google Places a expiré ou n'est plus valide :
+# 1. Accédez à Google Cloud Platform : https://console.cloud.google.com/
+# 2. Créez un nouveau projet ou sélectionnez un projet existant.
+# 3. Dans le menu de navigation, allez dans "API et services" > "Bibliothèque".
+# 4. Recherchez et sélectionnez l'API "Places API" (Google Places API).
+# 5. Cliquez sur "Activer" pour activer l'API pour votre projet.
+# 6. Une fois l'API activée, allez dans "API et services" > "Identifiants" pour créer une clé API.
+# 7. Copiez la clé API générée et collez-la dans la variable `api_key` du programme ci-après :
+
+# Pour autoriser l'accès à l'email via des applications moins sécurisées :
+# 1. Connectez-vous à votre compte Gmail : https://mail.google.com/
+# 2. Cliquez sur l'icône de votre profil en haut à droite, puis sur "Gérer votre compte Google".
+# 3. Dans le menu, allez dans "Sécurité".
+# 4. Sous la section "Accès de l'application moins sécurisée", activez l'option "Accès autorisé".
+#    (Note : Cette option peut ne pas être disponible si l'authentification à deux facteurs est activée.
+#     Dans ce cas, vous devrez créer un mot de passe spécifique à l'application.)
+# 5. Utilisez cette adresse email et le mot de passe associé dans le programme.
+
+# Google Places API
+api_key = ''
+
+# Votre mot de passe d'application
+sender_email = "@gmail.com"
+password = ""
+
+##########################################################################"
+
 import re
 import sys
 
 # Liste d'emails
-receiver_email = ["romtaug@gmail.com"]
+receiver_email = ["@gmail.com"]
 
 # Fonction de validation des emails
 def is_valid_email(email):
@@ -349,9 +377,9 @@ def send_email_with_excel(sender_email, password, receiver_emails, subject, body
 # Script principal
 if __name__ == "__main__":
     # Clés API et configuration
-    api_key = 'AIzaSyCiSj34tlTAQMLU5CSd0ebZYzob5Ly1lzo'
-    sender_email = "taugourdea@cy-tech.fr"
-    password = "merz kpoh hcwm xjof"
+    api_key = api_key
+    sender_email = sender_email
+    password = password
     receiver_email = receiver_email
 
     # Création du fichier Excel
