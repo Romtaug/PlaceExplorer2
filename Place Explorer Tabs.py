@@ -8,6 +8,16 @@
 # 6. Une fois l'API activée, allez dans "API et services" > "Identifiants" pour créer une clé API.
 # 7. Copiez la clé API générée et collez-la dans la variable `api_key` du programme ci-après :
 
+# Si la console vous empêche de créer un nouveau projet (quota atteint ou "plein") :
+# ➜ Supprimez un projet inutile pour faire de la place :
+#    1. Accédez à Google Cloud Platform : https://console.cloud.google.com/
+#    2. Cliquez sur le menu ☰ (en haut à gauche).
+#    3. Allez dans "IAM et administration" > "Gérer les ressources".
+#    4. Sélectionnez le projet à supprimer.
+#    5. Cliquez sur ⋮ à droite puis sur "Supprimer".
+#    6. Tapez l'ID du projet pour confirmer.
+#    7. Le projet sera désactivé immédiatement, puis supprimé définitivement après 30 jours.
+
 # Pour autoriser l'accès à l'email via des applications moins sécurisées :
 # 1. Connectez-vous à votre compte Gmail : https://mail.google.com/
 # 2. Cliquez sur l'icône de votre profil en haut à droite, puis sur "Gérer votre compte Google".
