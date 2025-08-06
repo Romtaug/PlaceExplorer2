@@ -1,4 +1,7 @@
-# Ajoutez météo et la température juillet, aout
+receiver_email = ["@gmail.com"]
+
+##########################################################################
+
 # Si la clé API Google Places a expiré ou n'est plus valide :
 # 1. Accédez à Google Cloud Platform : https://console.cloud.google.com/
 # 2. Créez un nouveau projet ou sélectionnez un projet existant.
@@ -7,7 +10,7 @@
 # 5. Cliquez sur "Activer" pour activer l'API pour votre projet.
 # 6. Une fois l'API activée, allez dans "API et services" > "Identifiants" pour créer une clé API.
 # 7. Copiez la clé API générée et collez-la dans la variable `api_key` du programme ci-après :
-
+api_key = '' # API Events
 # Si la console vous empêche de créer un nouveau projet (quota atteint ou "plein") :
 # ➜ Supprimez un projet inutile pour faire de la place :
 #    1. Accédez à Google Cloud Platform : https://console.cloud.google.com/
@@ -22,25 +25,13 @@
 # 1. Connectez-vous à votre compte Gmail : https://mail.google.com/
 # 2. Cliquez sur l'icône de votre profil en haut à droite, puis sur "Gérer votre compte Google".
 # 3. Dans le menu, allez dans "Sécurité".
-# 4. Sous la section "Accès de l'application moins sécurisée", activez l'option "Accès autorisé".
+# 4. Sous la section "Accès de l'application moins sécurisée", actAivez l'option "Accès autorisé".
 #    (Note : Cette option peut ne pas être disponible si l'authentification à deux facteurs est activée.
 #     Dans ce cas, vous devrez créer un mot de passe spécifique à l'application.)
 # 5. Utilisez cette adresse email et le mot de passe associé dans le programme.
 
-# Google Places API
-api_key = ''
-
-# Votre mot de passe d'application
-sender_email = "@gmail.com"
-password = ""
-
-##########################################################################"
-
 import re
 import sys
-
-# Liste d'emails
-receiver_email = ["@gmail.com"]
 
 # Fonction de validation des emails
 def is_valid_email(email):
@@ -52,11 +43,33 @@ for email in receiver_email:
         print(f"❌ Adresse email invalide : {email}")
         sys.exit(1)
 
-print("✅ Toutes les adresses email sont valides.")
+print("Toutes les adresses email sont valides.")
 
 
 ###########################################################################
 
+import importlib
+import subprocess
+import sys
+
+# Modules de la librairie standard qu'on n'a pas besoin d'installer
+standard_libs = {'time', 'smtplib', 'email', 'os', 'unicodedata'}
+
+# Modules à vérifier
+modules = [
+    'requests', 'pandas', 'openpyxl'
+]
+
+# Vérification et installation si besoin
+for module in modules:
+    if module not in standard_libs:
+        try:
+            importlib.import_module(module)
+        except ImportError:
+            print(f"{module} non installé, installation en cours...")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", module])
+
+# Importations
 import requests
 import time
 import smtplib
@@ -71,6 +84,9 @@ import shutil
 import unicodedata
 from openpyxl import load_workbook
 from openpyxl.styles import Font
+
+print("Tous les modules sont importés avec succès.")
+
 
 def apply_hyperlink_styles(file_path):
     """
@@ -145,7 +161,7 @@ def normalize_location(location):
 
         # Si le format est incorrect, redemander à l'utilisateur
         print("❌ Format incorrect. Veuillez entrer une localisation au format 'Ville, Pays' ou 'Pays'.")
-        location = input("Please enter the location (ex: Paris, France; or : France): ").strip()
+        location = input("Please enter the location in english (ex: Paris, France; or : France) : ").strip()
 
 def adjust_column_width(file_path):
     wb = load_workbook(file_path)
@@ -186,48 +202,66 @@ def get_place_details(place_id, api_key):
 import requests
 import time
 
+def extract_city_from_address(full_address):
+    """
+    Extrait la ville d'une adresse en prenant :
+    - L'avant-dernier élément si des virgules existent.
+    - Le premier mot si aucune virgule.
+    - Gère les cas de 'Unnamed Road'.
+    """
+    address_parts = full_address.split(", ")
+
+    if "Unnamed Road" in full_address:
+        # Si l'adresse contient "Unnamed Road", on prend la partie après
+        city = address_parts[-2] if len(address_parts) > 2 else address_parts[-1]
+    elif len(address_parts) > 2:
+        # Si on a au moins 2 virgules, on prend l'avant-dernier élément
+        city = address_parts[-2]
+    elif len(address_parts) == 2:
+        # Si une seule virgule, prendre le premier élément (souvent la ville)
+        city = address_parts[0]
+    else:
+        # Si pas de virgule, prendre le premier mot
+        city = full_address.split(" ")[0]
+
+    return city
+
 def search_places(api_key, location, category):
     """
-    Searches for places in a specific location and category using the Google Places API.
-
-    Args:
-        api_key (str): Google API key.
-        location (str): Location to search within.
-        category (str): Category of places to search for.
-
-    Returns:
-        list: A list of dictionaries containing detailed information about the places.
+    Recherche les 20 lieux les plus populaires dans une localisation et une catégorie donnée via l'API Google Places.
+    Ajoute une colonne 'City' en extrayant correctement la ville de l'adresse.
     """
+    import requests
+    import time
+
     url = "https://maps.googleapis.com/maps/api/place/textsearch/json"
     params = {'query': f'{category} in {location}', 'key': api_key}
     places = []
 
-    # Fetch all pages of results
-    while True:
-        response = requests.get(url, params=params)
-        if response.status_code == 200:
-            results = response.json()
-            places.extend(results.get('results', []))  # Ensure no errors if 'results' is missing
-            if 'next_page_token' not in results:
-                break
-            params['pagetoken'] = results['next_page_token']
-            time.sleep(2)  # Required delay for the next_page_token
-        else:
-            print(f"Error {response.status_code} while fetching data for {category}")
-            break
+    response = requests.get(url, params=params)
+    if response.status_code == 200:
+        results = response.json()
+        places = results.get('results', [])[:20]  # ✅ On prend juste les 20 premiers lieux (page 1)
+    else:
+        print(f"Erreur {response.status_code} lors de la récupération des données pour {category}")
+        return []
 
-    # Fetch detailed information for each place
     detailed_places = []
     for place in places:
         place_id = place.get('place_id')
         if not place_id:
-            continue  # Skip if place_id is missing
+            continue
+
         details = get_place_details(place_id, api_key)
         if details:
+            full_address = details.get('formatted_address', 'Not specified')
+            city = extract_city_from_address(full_address)
+
             detailed_places.append({
+                'City': city,
+                'Address': full_address,
                 'Name': details.get('name', 'Not specified'),
-                'Address': details.get('formatted_address', 'Not specified'),
-                'Total Reviews': details.get('user_ratings_total', 0),  # Default to 0 if missing
+                'Total Reviews': details.get('user_ratings_total', 0),
                 'Rating (on 5)': details.get('rating', 'Not rated'),
                 'Price Level': {
                     0: "Free",
@@ -235,11 +269,12 @@ def search_places(api_key, location, category):
                     2: "++",
                     3: "+++",
                     4: "++++"
-                }.get(details.get('price_level', None), 'Not specified'),  # Translate price level or fallback
+                }.get(details.get('price_level', None), 'Not specified'),
                 'Maps': f'=HYPERLINK("https://www.google.com/maps/place/?q=place_id:{place_id}", '
                         f'"https://www.google.com/maps/place/?q=place_id:{place_id}")',
                 'Phone': details.get('international_phone_number', 'Not available')
             })
+
     return detailed_places
 
 # Fonction pour ajuster la largeur des colonnes
@@ -262,7 +297,7 @@ def adjust_column_width(file_path):
 
 # Modifier la fonction create_excel_file
 def create_excel_file(api_key):
-    print("Please enter the location (ex : Paris, France; or : France")
+    print("Please enter the location in english (ex : Paris, France; or : France) :")
     location = input().strip()
     normalized_location = normalize_location(location)
     location = " ".join(location.split())
@@ -276,7 +311,10 @@ def create_excel_file(api_key):
     sanitized_location = location.replace(",", "-").replace(" ", "")
 
     # Générer le chemin temporaire
-    file_path = f"{sanitized_location}_{vacation_month}.xlsx"
+    script_dir = os.path.dirname(os.path.abspath(__file__))  # dossier du script
+    file_name = f"{sanitized_location}_{vacation_month}.xlsx"
+    file_path = os.path.join(script_dir, file_name)
+
     writer = pd.ExcelWriter(file_path, engine='openpyxl')
 
     categories = {
@@ -297,6 +335,7 @@ def create_excel_file(api_key):
         'concert_halls': '🎶 Salles de concert',
         'nightclubs': '💃 Boîtes de nuit',
         'movie_theaters': '🎬 Cinémas',
+        'stadiums': '🏟️ Stades',
         # Shopping
         'markets': '🌽 Marchés',
         'boutiques': '🛍️ Boutiques',
@@ -312,9 +351,14 @@ def create_excel_file(api_key):
         'campgrounds': '🏕️ Campings',
         'sports_centers': '🏋️‍♂️ Centres sportifs',
         'spas': '💆‍♀️ Spas',
+        'gym': '🏋️‍♀️ Salles de sport',
         # Transports
         'train_stations': '🚆 Gares',
-        'airports': '✈️ Aéroports'
+        'airports': '✈️ Aéroports',
+        # Éducation
+        'schools': '🏫 Écoles',
+        # Santé
+        'hospitals': '🏥 Hôpitaux',
     }
 
     for category, description in categories.items():
@@ -388,8 +432,8 @@ def send_email_with_excel(sender_email, password, receiver_emails, subject, body
 if __name__ == "__main__":
     # Clés API et configuration
     api_key = api_key
-    sender_email = sender_email
-    password = password
+    sender_email = "@cy-tech.fr"
+    password = ""
     receiver_email = receiver_email
 
     # Création du fichier Excel
@@ -411,7 +455,17 @@ if __name__ == "__main__":
         exit()
 
     # Images à joindre
-    image_paths = ["image/logo.png", "image/travel.png", "image/qrcode.png"]
+    import os
+
+    # Obtenir le chemin absolu du script courant
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Construire les chemins absolus des images
+    image_paths = [
+        os.path.join(script_dir, "Image", "logo.png"),
+        os.path.join(script_dir, "Image", "travel.png"),
+        os.path.join(script_dir, "Image", "qrcode.png")
+    ]
 
     # Texte de l'e-mail
     email_body = f"""Bienvenue à bord de Place Explorer !
@@ -421,9 +475,11 @@ Découvrez {location} ! C'est une destination rêvée pour des aventures inoubli
     - Un plan d'organisation pour votre voyage
 
 🗺 Étapes pour organiser votre voyage :
-    1. Ouvrez le fichier Excel attaché avec Google Sheet
+    1. Ouvrez le fichier Excel attaché avec Google Sheet en cliquant une fois dessus
     2. Consultez chaque feuille pour explorer les meilleurs options par catégorie
-    3. Planifiez vos activités sur : https://www.google.com/mymaps
+    3. Planifiez vos activités (par exemple 2/jours par feuille) sur : https://www.google.com/mymaps un calque par ville
+    4. Si le réseau est payant à l’étranger, utilisez Google Maps hors connexion : https://support.google.com/maps/answer/6291838?hl=fr
+    5. Envoyez-vous votre parcours du jour (en fonction de la proximité) sur WhatsApp ou via Google Docs pour le garder à portée de main sur votre téléphone : https://web.whatsapp.com, https://wa.me, ou https://docs.google.com
 
 🌍 Liens utiles :
     - ✈ Pour trouver les vols les moins chers et obtenir des indemnisations en cas de retard : https://www.skyscanner.fr/ ou https://www.airhelp.com/fr/
@@ -436,24 +492,29 @@ Découvrez {location} ! C'est une destination rêvée pour des aventures inoubli
 
 🤖 Copiez ce prompt sur https://chatgpt.com pour enrichir votre expérience :
 
-"Je cherche des expériences extraordinaires à {location_cleaned} en {vacation_month_cleaned}, fais un top 20 des incontournables (monuments, restaurants, quartiers) et un top 10 des villes à visiter autour avec le temps de trajet, indique les démarches administratives nécessaires (documents, visas, vaccins), les précautions à prendre (arnaques, numéros d'urgence), les coûts approximatifs, la météo moyenne, les événements locaux, et des astuces pour se déplacer, respecter les coutumes, et profiter au maximum."
+"Je cherche des expériences et activités extraordinaires à {location_cleaned} en {vacation_month_cleaned}, fais un top 20 des incontournables durant cette période (événements, activités, monuments, restaurants, quartiers) et un top 10 des villes à visiter autour avec le temps de trajet, indique les démarches administratives nécessaires (documents, visas, vaccins), les précautions à prendre (arnaques, numéros d'urgence), les coûts approximatifs, la météo moyenne, les événements locaux, et des astuces pour se déplacer, respecter les coutumes, et profiter au maximum."
         
 Nous espérons que vous passerez un moment incroyable. Bon voyage ! ✈
 N'hésitez pas à faire un don via PayPal à l'adresse romtaug@gmail.com si cela vous a aidé.
 Accédez à notre outil pour travailler à l'étranger : https://bordeuroconnect.netlify.app/"""
 
-    # Objet de l'email formaté
-    subject = f"🌍 PlaceExplorer : Les Meilleurs Lieux Destination {location_cleaned} en {vacation_month_cleaned}"
+# Objet de l'email formaté
+subject = f"🌍 PlaceExplorer : Les Meilleurs Lieux Destination {location_cleaned} en {vacation_month_cleaned}"
 
+try:
     # Envoi de l'e-mail avec fichier Excel et images
-    try:
-        send_email_with_excel(sender_email, password, receiver_email, subject, email_body, excel_file, image_paths)
+    send_email_with_excel(sender_email, password, receiver_email, subject, email_body, excel_file, image_paths)
 
-        # Déplacer le fichier dans le dossier Content
-        content_dir = "Content"
-        if not os.path.exists(content_dir):
-            os.makedirs(content_dir)
-        shutil.move(excel_file, os.path.join(content_dir, os.path.basename(excel_file)))
-        print(f"Fichier déplacé dans le dossier Content : {os.path.join(content_dir, os.path.basename(excel_file))}")
-    except Exception as e:
-        print(f"Erreur lors de l'envoi de l'e-mail ou du déplacement du fichier : {e}")
+    # Déplacer le fichier dans le dossier "Content" situé à côté du script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    content_dir = os.path.join(script_dir, "Content")
+
+    if not os.path.exists(content_dir):
+        os.makedirs(content_dir)
+        
+    destination = os.path.join(content_dir, os.path.basename(excel_file))
+    shutil.move(excel_file, destination)
+    print(f"✅ Fichier déplacé dans le dossier Content : {destination}")
+
+except Exception as e:
+    print(f"❌ Erreur lors de l'envoi de l'e-mail ou du déplacement du fichier : {e}")
