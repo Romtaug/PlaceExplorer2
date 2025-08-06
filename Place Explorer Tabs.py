@@ -1,4 +1,4 @@
-receiver_email = ["@gmail.com"]
+receiver_email = ["romtaug@gmail.com"]
 
 ##########################################################################
 
@@ -86,7 +86,6 @@ from openpyxl import load_workbook
 from openpyxl.styles import Font
 
 print("Tous les modules sont importés avec succès.")
-
 
 def apply_hyperlink_styles(file_path):
     """
@@ -241,7 +240,7 @@ def search_places(api_key, location, category):
     response = requests.get(url, params=params)
     if response.status_code == 200:
         results = response.json()
-        places = results.get('results', [])[:20]  # ✅ On prend juste les 20 premiers lieux (page 1)
+        places = results.get('results', [])[:20]  # ✅ On prend juste les 20 premiers lieux (page 1) souvent les plus populaires
     else:
         print(f"Erreur {response.status_code} lors de la récupération des données pour {category}")
         return []
@@ -432,7 +431,7 @@ def send_email_with_excel(sender_email, password, receiver_emails, subject, body
 if __name__ == "__main__":
     # Clés API et configuration
     api_key = api_key
-    sender_email = "@cy-tech.fr"
+    sender_email = "taugourdea@cy-tech.fr"
     password = ""
     receiver_email = receiver_email
 
@@ -518,3 +517,4 @@ try:
 
 except Exception as e:
     print(f"❌ Erreur lors de l'envoi de l'e-mail ou du déplacement du fichier : {e}")
+
